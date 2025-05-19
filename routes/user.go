@@ -56,7 +56,48 @@ func GetAllUsers(c *fiber.Ctx) error {
 
 }
 
+func AddUser(c *fiber.Ctx) error{
+
+	user := new(models.User);
+	if err := c.BodyParser(user); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"status":  "error",
+			"message": "Error parsing request body " + err.Error(),
+		})
+	}
+
+	query := `INSERT INTO hydrogreen.users (name, email) VALUES ($1, $2) RETURNING id`;
+	err := db.DB.QueryRow(query, user.Name, user.Email).Scan(&user.ID);
+	if err != nil{
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"status":  "error",
+			"message": "Error inserting user " + err.Error(),
+		})
+	}
+	return c.Status(fiber.StatusCreated).JSON(fiber.Map{
+		"status":  "success",
+		"message": "User created successfully",
+		"user":    user,});
+}
+
+func RemoveUser(c *fiber.Ctx) error{
+	id := c.Params("id");
+	query :=`DELETE FROM hydrogreen.users WHERE id = $1`;
+	_, err := db.DB.Exec(query, id);
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"status":  "error",
+			"message": "Error deleting user " + err.Error(),
+		})
+	}
+	
+	log.Println("ID: ", id);
+	return c.SendString("User deleted successfully");
+}
+
 func SetupRoutes(app *fiber.App) {
 	// Define your routes here
 	app.Get("/users", GetAllUsers)
+	app.Post("/users", AddUser)
+	app.Delete("/users/:id", RemoveUser)
 }
