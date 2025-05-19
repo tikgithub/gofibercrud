@@ -23,6 +23,5 @@ func main() {
 		log.Println("Error starting server:", err)
 	} else {
 		log.Println("Server started on port 3000")
-
 	}
 }
